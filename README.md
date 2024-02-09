@@ -41,3 +41,76 @@ In the [7400-series](https://en.wikipedia.org/wiki/List_of_7400-series_integrate
 ### LUTs and NANDs
 
 LUTs are general, NANDs are specific logic operators. All LUTS where all except the last value is `1` are NANDs. LUTs are great for abstract considerations (like algorithms or programs), NANDs are great for concrete implementations (like digital circuits, with off-the-shelf logic circuits).
+
+### LUT-to-NAND transformation
+
+#### LUT-to-logic transformation
+
+First, transform the LUT array to a logic expression, `∧` for combining values to rows, `∨` for combining rows to the final result, and `¬` along the way.
+
+##### Example
+
+Considering a one-bit-adder with in/out carry:
+
+|  ci  |  a  |  b  | a+b |  co  |
+| ---- | --- | --- | --- | ---- |
+|   0  |  0  |  0  |  0  |   0  |
+|   1  |  0  |  0  |  1  |   0  |
+|   0  |  1  |  0  |  1  |   0  |
+|   1  |  1  |  0  |  0  |   1  |
+|   0  |  0  |  1  |  1  |   0  |
+|   1  |  0  |  1  |  0  |   1  |
+|   0  |  1  |  1  |  0  |   1  |
+|   1  |  1  |  1  |  1  |   1  |
+
+The three inputs are `ci` (carry-in), `a` and `b`.
+
+The two LUTs are:
+  - `a+b` is `[ 0, 1, 1, 0, 1, 0, 0, 1 ]`
+  - `co` (carry-out) is `[ 0, 0, 0, 1, 0, 1, 1, 1]`
+
+The logic expressions for the LUTs would then be:
+
+```
+a+b = ¬(¬ci ∧ ¬a ∧ ¬b)
+    ∨  ( ci ∧ ¬a ∧ ¬b)
+    ∨  (¬ci ∧  a ∧ ¬b)
+    ∨ ¬( ci ∧  a ∧ ¬b)
+    ∨  (¬ci ∧ ¬a ∧  b)
+    ∨ ¬( ci ∧ ¬a ∧  b)
+    ∨ ¬(¬ci ∧  a ∧  b)
+    ∨  ( ci ∧  a ∧  b)
+```
+
+and
+
+```
+co  = ¬(¬ci ∧ ¬a ∧ ¬b)
+    ∨ ¬( ci ∧ ¬a ∧ ¬b)
+    ∨ ¬(¬ci ∧  a ∧ ¬b)
+    ∨  ( ci ∧  a ∧ ¬b)
+    ∨ ¬(¬ci ∧ ¬a ∧  b)
+    ∨  ( ci ∧ ¬a ∧  b)
+    ∨  (¬ci ∧  a ∧  b)
+    ∨  ( ci ∧  a ∧  b)
+```
+
+#### Logic-to-NAND Normalization
+
+Next, transform all terms to a normal NAND form.
+
+- `a ∧ b` ⇒ `¬(¬(a ∧ b))`
+- `a ∨ b` ⇒ `¬(¬a ∧ ¬b)`
+
+(maybe there are more/better substitution rules)
+
+
+#### NAND breakdown
+
+Up to this point, there are no intermediate values, only one expression per LUT.
+
+Search and extract subterms (gates), adding one intermediate value per gate, until there are only concrete gates left.
+
+(maybe compute and consider fan-in/fan-out)
+
+Group/order gates by there gate-delay.
